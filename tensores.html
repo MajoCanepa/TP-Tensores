@@ -9,43 +9,34 @@
 <body>
     <h1>Trabajo con Tensores</h1>
     <script>
-        
-        function tamañoTensor(tensor) {
-            return tensor.size * tf.util.bytesPerElement(tensor.dtype) / (1024 * 1024);
-        }
 
-        const array = Array(10).fill().map(() => Array(10).fill().map((_, i) => (i % 9) + 1));
+        let array = [];
+        for (let i = 0; i < 10; i++) {
+            let innerArray = [];
+            for (let j = 0; j < 10; j++) {
+                innerArray.push((j % 9) + 1);
+            }
+            array.push(innerArray);
+        }
 
         let tensor1 = tf.tensor(array);
         let tensor2 = tf.tensor(array);
 
-        console.log('Tensor 1 inicial:');
-        console.log(tensor1.toString());
+        let resultado = tf.matMul(tensor1, tensor2);
+        
+        while (resultado.size * tf.util.bytesPerElement(resultado.dtype) / (1024 * 1024) < 64) {
+            let temp = tf.matMul(resultado, tensor1);
+            resultado.dispose();
+            resultado = tf.keep(temp);
+        }
 
-        console.log('Tensor 2:');
-        console.log(tensor2.toString());
-
-        const resultado = tf.tidy(() => {
-            while (tamañoTensor(tensor1) < 64) {
-                let temp = tf.matMul(tensor1, tensor2);
-                console.log('Resultado de la multiplicación:');
-                console.log(temp.toString());
-                tensor1.dispose();
-                tensor1 = tf.keep(temp);
-            }
-            return tensor1;
-        });
-
-        console.log('Tensor 1 final:');
-        console.log(resultado.toString());
-
-        console.log('Tamaño del tensor resultado: ' + tamañoTensor(resultado) + ' MB');
-        console.log('numTensors (before dispose): ' + tf.memory().numTensors);
+        console.log('Tensor final:', resultado.toString());
+        console.log('Tamaño del tensor resultado:', (resultado.size * tf.util.bytesPerElement(resultado.dtype) / (1024 * 1024)) + ' MB');
 
         resultado.dispose();
+        tensor1.dispose();
         tensor2.dispose();
 
-        console.log('numTensors (after dispose): ' + tf.memory().numTensors);
     </script>
 </body>
 </html>
